@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "UserPreferencesDoc": {
+      "title": "UserPreferencesDoc",
+      "description": "Cloud-saved user preferences and persistent favorite drivers and constructors for cross-device synchronization.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The authenticated Firebase Auth UID of the account owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name or paddock callsign.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "favoriteDrivers": {
+          "type": "array",
+          "description": "List of canonical driver IDs favorited by the user (max 25).",
+          "maxLength": 25
+        },
+        "favoriteTeams": {
+          "type": "array",
+          "description": "List of canonical constructor IDs favorited by the user (max 15).",
+          "maxLength": 15
+        },
+        "units": {
+          "type": "string",
+          "description": "Preferred measurement unit system.",
+          "enum": ["metric", "imperial"],
+          "maxLength": 16
+        },
+        "defaultSeason": {
+          "type": "number",
+          "description": "Preferred active championship season (e.g. 2026)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile document was first created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile document was last updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "displayName",
+        "favoriteDrivers",
+        "favoriteTeams",
+        "units",
+        "defaultSeason",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserPreferencesDoc"
+      },
+      "description": "Per-user document storing cloud-synced F1 Hub favorites and preferences, keyed by Firebase Auth UID."
+    }
+  }
+}

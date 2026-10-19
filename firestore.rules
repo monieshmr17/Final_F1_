@@ -1,0 +1,107 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidStringArray(arr, maxLen) {
+      return arr is list
+        && arr.size() <= maxLen
+        && (arr.size() == 0 || (arr[0] is string && arr[0].size() >= 1 && arr[0].size() <= 64));
+    }
+
+    function isValidUserPreferencesDoc(data) {
+      return data.keys().hasAll([
+          'ownerId',
+          'displayName',
+          'favoriteDrivers',
+          'favoriteTeams',
+          'units',
+          'defaultSeason',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId',
+          'displayName',
+          'favoriteDrivers',
+          'favoriteTeams',
+          'units',
+          'defaultSeason',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 80
+        && isValidStringArray(data.favoriteDrivers, 25)
+        && isValidStringArray(data.favoriteTeams, 15)
+        && data.units is string
+        && data.units.size() <= 16
+        && (data.units == 'metric' || data.units == 'imperial')
+        && data.defaultSeason is int
+        && data.defaultSeason >= 1950
+        && data.defaultSeason <= 2030
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false;
+
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUserPreferencesDoc(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUserPreferencesDoc(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName',
+          'favoriteDrivers',
+          'favoriteTeams',
+          'units',
+          'defaultSeason',
+          'updatedAt'
+        ]);
+
+      allow delete: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId;
+    }
+  }
+}

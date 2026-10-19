@@ -1,0 +1,6 @@
+{
+  "name": "ULTIMATE F1 HUB | The Complete Motorsport Universe",
+  "description": "High-end editorial Formula 1 hub featuring verified 2026 and historical driver career and season statistics, constructors, live telemetry, circuits, and technical archives.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
